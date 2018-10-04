@@ -1,0 +1,162 @@
+series: xenial
+machines:
+  '0':
+    series: xenial
+    constraints: tags=control
+  '1':
+    series: xenial
+    constraints: tags=control
+  '2':
+    series: xenial
+    constraints: tags=control
+applications:
+  keepalived:
+    charm: cs:~containers/keepalived-2
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel-worker:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+    options:
+      iface: enp0s2
+  easyrsa:
+    charm: cs:~containers/easyrsa
+    num_units: 1
+    annotations:
+      gui-x: '450'
+      gui-y: '550'
+    to:
+    - lxd:ceph-osd
+    bindings:
+      "": default
+  ceph-osd:
+    charm: cs:ceph-osd
+    num_units: 3
+    options:
+      osd-devices: /dev/vdb /dev/vdc
+    bindings:
+      "": default
+      cluster: ceph-cluster
+    annotations:
+      gui-x: '300'
+      gui-y: '300'
+    to:
+    - 0
+    - 1
+    - 2
+  ceph-radosgw:
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    charm: cs:ceph-radosgw
+    num_units: 1
+    bindings:
+      "": default
+    to:
+    - lxd:ceph-osd
+  kubernetes-worker:
+    charm: cs:~containers/kubernetes-worker
+    constraints: cores=2 mem=2048 root-disk=15G
+    num_units: 3
+    expose: true
+    annotations:
+      gui-x: '100'
+      gui-y: '850'
+    bindings:
+      "": default
+    to:
+    - 'kvm:0'
+    - 'kvm:1'
+    - 'kvm:2'
+  kubernetes-master:
+    charm: cs:~containers/kubernetes-master
+    num_units: 3
+    annotations:
+      gui-x: '800'
+      gui-y: '850'
+    bindings:
+      "": default
+    to:
+    - lxd:0
+    - lxd:1
+    - lxd:2
+  ceph-mon:
+    charm: 'cs:ceph-mon'
+    num_units: 3
+    annotations:
+      gui-x: '600'
+      gui-y: '300'
+    bindings:
+      "": default
+    to:
+     - lxd:0
+     - lxd:1
+     - lxd:2
+  etcd:
+    charm: cs:~containers/etcd
+    num_units: 3
+    annotations:
+      gui-x: '800'
+      gui-y: '550'
+    bindings:
+      "": default
+    to:
+    - lxd:ceph-osd
+  kubeapi-load-balancer:
+    charm: cs:~containers/kubeapi-load-balancer
+    num_units: 1
+    expose: true
+    annotations:
+      gui-x: '450'
+      gui-y: '250'
+    bindings:
+      "": default
+    to:
+    - lxd:ceph-osd
+relations:
+- - 'ceph-mon:osd'
+  - 'ceph-osd:mon'
+- - 'kubernetes-master:kube-api-endpoint'
+  - 'kubeapi-load-balancer:apiserver'
+- - 'kubernetes-master:loadbalancer'
+  - 'kubeapi-load-balancer:loadbalancer'
+- - 'kubernetes-master:kube-control'
+  - 'kubernetes-worker:kube-control'
+- - 'kubernetes-master:certificates'
+  - 'easyrsa:client'
+- - 'etcd:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-master:etcd'
+  - 'etcd:db'
+- - 'kubernetes-worker:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-worker:kube-api-endpoint'
+  - 'keepalived:website'
+- - 'kubernetes-master:loadbalancer'
+  - 'keepalived:loadbalancer'
+- - 'kubeapi-load-balancer:website'
+  - 'keepalived:lb-sink'
+- - 'kubeapi-load-balancer:juju-info'
+  - 'keepalived:juju-info'
+- - 'kubeapi-load-balancer:certificates'
+  - 'easyrsa:client'
+- - 'flannel:etcd'
+  - 'etcd:db'
+- - 'flannel-worker:etcd'
+  - 'etcd:db'
+- - 'flannel:cni'
+  - 'kubernetes-master:cni'
+- - 'flannel-worker:cni'
+  - 'kubernetes-worker:cni'
+- - 'kubernetes-master:ceph-storage'
+  - 'ceph-mon:admin'
+- - 'ceph-mon:radosgw'
+  - 'ceph-radosgw:mon'
