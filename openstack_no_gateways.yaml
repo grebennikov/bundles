@@ -1,0 +1,398 @@
+# Openstack Queens Bionic Sanity Test
+
+### SPACES ARE REQUIRED TO USE THIS BUNDLE ###
+### (but you can alias everything to the same space)
+
+# This bundle will deploy a small three node
+# openstack cloud for infrastructure testing
+# purposes only
+
+####  THIS IS NOT A PRODUCTION QUALITY CLOUD ####
+
+### This is a sanity test for:
+### Openstack Release: Queens
+### Ubuntu Release: Bionic
+### Spaces Required: Yes
+### HA: Yes
+### Provider Networks Only (No neutron-gateway)
+
+#Notes:
+
+### lldpd charm ###
+# You must pull lldpd charm locally and edit metadata.yaml
+# and add bionic as a series
+# i.e.:
+#      charm pull cs:~ivoks/lldpd
+#      sed '/"series":/a- "bionic"' -i ./lldpd/metadata.yaml
+
+### livepatch charm ###
+# Please enter your livepatch token under the livepatch variable
+#
+
+### landscape charm ###
+# This uses the Landsape SaaS offering
+# It is intended for PoCs led by Canoical CPE Team members
+#
+
+series: bionic
+variables:
+
+  ### PoC Options ###
+  landscape-tags:            &landscape-tags           'Charter,PoC,Openstack,Bionic,Queens,DeleteMe'           #For landscape tags
+  dns-domain:                &dns-domain               'charterlab.net.'    #Don't drop the trailing period
+  neutron-dns-servers:       &neutron-dns-servers      '172.27.20.1,172.27.22.1,172.27.23.254'
+  prefer-ipv6:               &prefer-ipv6               False
+  landscape-account:         &landscape-account         cpe-sa
+  livepatch-key:             &livepatch-key             fe947b1a181c4754a7b071b7a7b3b897
+
+  ### Openstack Options ###
+  openstack-origin:          &openstack-origin          distro-proposed     #do not use cloud:<pocket> for an LTS version
+  openstack-region:          &openstack-region          RegionOne
+  worker-multiplier:         &worker-multiplier         0.20
+  haproxy-server-timeout:    &haproxy-server-timeout    90000
+  haproxy-client-timeout:    &haproxy-client-timeout    90000
+  haproxy-queue-timeout:     &haproxy-queue-timeout     9000
+  haproxy-connect-timeout:   &haproxy-connect-timeout   9000
+
+  ### MySQL Options ###
+  mysql-connections:         &mysql-connections         2000
+  mysql-buffer:              &mysql-buffer              1024M
+  mysql-wait:                &mysql-wait                180
+
+  ### Neutron Options ###
+#  data-port:                 &data-port                 br-data:bond0        # Do not change 'br-data', modify only the NIC
+  data-port:                 &data-port                 br-data:br1           # Do not change 'br-data', modify only the NIC
+  bridge-mappings:           &bridge-mappings           physnet1:br-data
+  flat-network-providers:    &flat-network-providers    physnet1
+  instance-mtu:              &instance-mtu              1400                  # See http://docs.openstack.org/admin-guide-cloud/content/openvswitch_plugin.html
+  ###Spaces###
+  oam-space:                 &oam-space                 oam-space            #Infrastructure Management, PXE, etc - should be untagged
+  admin-space:               &admin-space               oam-space            #OpenStack admin network; for adminURL endpoints
+  public-space:              &public-space              external-space       #OpenStack public network; for publicURL endpoints
+  internal-space:            &internal-space            internal-space       #OpenStack Internal network; for internalURL endpoints
+  external-space:            &external-space            external-space       #OpenStack Internal network; for internalURL endpoints
+  overlay-space:             &overlay-space             overlay-space        #Overlay network
+  ceph-public-space:         &ceph-public-space         ceph-access-space    #Storage Access Network
+  ceph-cluster-space:        &ceph-cluster-space        ceph-replica-space   #Storage Replication Network
+
+  ###Constraints### Workaround for 'only one default binding supported'
+#  ceph-access-constr:        &ceph-access-constr        spaces=ceph-access-space
+  oam-space-constr:          &oam-space-constr          spaces=oam-space
+  ceph-access-constr:        &ceph-access-constr        spaces=oam-space
+
+  ###Ceph Options####
+  ceph-source:               &ceph-source               proposed
+  osd-devices:               &osd-devices               /dev/sdb
+  expected-osd-count:        &expected-osd-count        3
+  expected-mon-count:        &expected-mon-count        3
+
+  ###NTP Options####
+  ntp-source:                &ntp-source                "91.189.91.157 91.189.94.4 91.189.89.198"
+
+
+
+  ###Charms#### - Leave the revision off to go with latest, or add a revision to lock it down
+  ceph-mon-charm:               &ceph-mon-charm                       cs:~openstack-charmers-next/bionic/ceph-mon
+  ceph-osd-charm:               &ceph-osd-charm                       cs:~openstack-charmers-next/bionic/ceph-osd
+  ceph-radosgw-charm:           &ceph-radosgw-charm                   cs:~openstack-charmers-next/bionic/ceph-radosgw
+  cinder-charm:                 &cinder-charm                         cs:~openstack-charmers-next/bionic/cinder
+  cinder-ceph-charm:            &cinder-ceph-charm                    cs:~openstack-charmers-next/bionic/cinder-ceph
+  glance-charm:                 &glance-charm                         cs:~openstack-charmers-next/bionic/glance
+  keystone-charm:               &keystone-charm                       cs:~openstack-charmers-next/bionic/keystone
+  mysql-charm:                  &mysql-charm                          cs:~openstack-charmers-next/bionic/percona-cluster
+  neutron-api-charm:            &neutron-api-charm                    cs:~openstack-charmers-next/bionic/neutron-api
+  neutron-gateway-charm:        &neutron-gateway-charm                cs:~openstack-charmers-next/bionic/neutron-gateway
+  neutron-openvswitch-charm:    &neutron-openvswitch-charm            cs:~openstack-charmers-next/bionic/neutron-openvswitch
+  nova-cloud-controller-charm:  &nova-cloud-controller-charm          cs:~openstack-charmers-next/bionic/nova-cloud-controller
+  nova-compute-kvm-charm:       &nova-compute-kvm-charm               cs:~openstack-charmers-next/bionic/nova-compute
+  ntp-charm:                    &ntp-charm                            cs:ntp
+  openstack-dashboard-charm:    &openstack-dashboard-charm            cs:~openstack-charmers-next/bionic/openstack-dashboard
+  rabbitmq-server-charm:        &rabbitmq-server-charm                cs:~openstack-charmers-next/bionic/rabbitmq-server
+  lldpd-charm:                  &lldpd-charm                          ./lldpd
+  canonical-livepatch-charm:    &canonical-livepatch-charm            cs:canonical-livepatch
+  landscape-client-charm:       &landscape-client-charm               cs:landscape-client
+
+machines:
+  '0':
+    series: bionic
+  '1':
+    series: bionic
+  '2':
+    series: bionic
+relations:
+  - [ "nova-compute-kvm:amqp", "rabbitmq-server:amqp" ]
+#  - [ "neutron-gateway:amqp", "rabbitmq-server:amqp" ]
+  - [ "keystone:shared-db", "mysql:shared-db" ]
+  - [ "nova-cloud-controller:identity-service", "keystone:identity-service" ]
+  - [ "glance:identity-service", "keystone:identity-service" ]
+  - [ "neutron-api:identity-service", "keystone:identity-service" ]
+  - [ "neutron-openvswitch:neutron-plugin-api", "neutron-api:neutron-plugin-api" ]
+  - [ "neutron-api:shared-db", "mysql:shared-db" ]
+  - [ "neutron-api:amqp", "rabbitmq-server:amqp" ]
+#  - [ "neutron-gateway:neutron-plugin-api", "neutron-api:neutron-plugin-api" ]
+  - [ "glance:shared-db", "mysql:shared-db" ]
+  - [ "glance:amqp", "rabbitmq-server:amqp" ]
+  - [ "nova-cloud-controller:image-service", "glance:image-service" ]
+  - [ "nova-compute-kvm:image-service", "glance:image-service" ]
+  - [ "nova-cloud-controller:cloud-compute", "nova-compute-kvm:cloud-compute" ]
+  - [ "nova-cloud-controller:amqp", "rabbitmq-server:amqp" ]
+#  - [ "nova-cloud-controller:quantum-network-service", "neutron-gateway:quantum-network-service" ]
+  - [ "nova-compute-kvm:neutron-plugin", "neutron-openvswitch:neutron-plugin" ]
+  - [ "neutron-openvswitch:amqp", "rabbitmq-server:amqp" ]
+  - [ "openstack-dashboard:identity-service", "keystone:identity-service" ]
+  - [ "nova-cloud-controller:shared-db", "mysql:shared-db" ]
+  - [ "nova-cloud-controller:neutron-api", "neutron-api:neutron-api" ]
+  - [ "cinder:image-service", "glance:image-service" ]
+  - [ "cinder:amqp", "rabbitmq-server:amqp" ]
+  - [ "cinder:identity-service", "keystone:identity-service" ]
+  - [ "cinder:cinder-volume-service", "nova-cloud-controller:cinder-volume-service" ]
+  - [ "cinder:shared-db", "mysql:shared-db" ]
+  - [ "ntp:juju-info", "nova-compute-kvm:juju-info" ]
+#  - [ "ntp:juju-info", "neutron-gateway:juju-info" ]
+  - [ "landscape-client", "nova-compute-kvm" ]
+  - [ "livepatch", "nova-compute-kvm" ]
+series: bionic
+services:
+### Openstack Configuration ###
+  cinder:
+    annotations:
+      gui-x: '750'
+      gui-y: '0'
+    charm: *cinder-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      region: *openstack-region
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      block-device: sdb
+      glance-api-version: 2
+      use-internal-endpoints: True
+      haproxy-server-timeout: *haproxy-server-timeout
+      haproxy-client-timeout: *haproxy-client-timeout
+      haproxy-queue-timeout: *haproxy-queue-timeout
+      haproxy-connect-timeout: *haproxy-connect-timeout
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+  glance:
+    annotations:
+      gui-x: '250'
+      gui-y: '0'
+    charm: *glance-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      region: *openstack-region
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      use-internal-endpoints: True
+      haproxy-server-timeout: *haproxy-server-timeout
+      haproxy-client-timeout: *haproxy-client-timeout
+      haproxy-queue-timeout: *haproxy-queue-timeout
+      haproxy-connect-timeout: *haproxy-connect-timeout
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+  keystone:
+    annotations:
+      gui-x: '500'
+      gui-y: '0'
+    charm: *keystone-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      region: *openstack-region
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      admin-password: openstack
+      preferred-api-version: 3
+      haproxy-server-timeout: *haproxy-server-timeout
+      haproxy-client-timeout: *haproxy-client-timeout
+      haproxy-queue-timeout: *haproxy-queue-timeout
+      haproxy-connect-timeout: *haproxy-connect-timeout
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+  neutron-api:
+    annotations:
+      gui-x: '500'
+      gui-y: '500'
+    charm: *neutron-api-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      region: *openstack-region
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      neutron-security-groups: true
+      flat-network-providers: *flat-network-providers
+      dns-domain: *dns-domain
+      enable-dvr: True
+      enable-ml2-dns: True
+      use-internal-endpoints: True
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+#  neutron-gateway:
+#    annotations:
+#      gui-x: '0'
+#      gui-y: '0'
+#    charm: *neutron-gateway-charm
+#    num_units: 3
+#    bindings:
+#      "": *oam-space
+#      data: *overlay-space
+#    options:
+#      openstack-origin: *openstack-origin
+#      worker-multiplier: *worker-multiplier
+#      bridge-mappings: *bridge-mappings
+#      data-port: *data-port
+#      worker-multiplier: *worker-multiplier
+#      instance-mtu: *instance-mtu
+#    to:
+#    - '0'
+  neutron-openvswitch:
+    annotations:
+     gui-x: '250'
+     gui-y: '500'
+    charm: *neutron-openvswitch-charm
+    num_units: 0
+    options:
+      worker-multiplier: *worker-multiplier
+      bridge-mappings: *bridge-mappings
+      prevent-arp-spoofing: False
+      data-port: *data-port
+      enable-local-dhcp-and-metadata: True
+      dns-servers: *neutron-dns-servers
+  nova-cloud-controller:
+    annotations:
+      gui-x: '0'
+      gui-y: '500'
+    charm: *nova-cloud-controller-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      region: *openstack-region
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      network-manager: Neutron
+      console-access-protocol: novnc
+      console-proxy-ip: local
+      use-internal-endpoints: True
+      single-nova-consoleauth: True
+      haproxy-server-timeout: *haproxy-server-timeout
+      haproxy-client-timeout: *haproxy-client-timeout
+      haproxy-queue-timeout: *haproxy-queue-timeout
+      haproxy-connect-timeout: *haproxy-connect-timeout
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+  nova-compute-lxd:
+    annotations:
+      gui-x: '250'
+      gui-y: '250'
+    charm: *nova-compute-kvm-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      openstack-origin: *openstack-origin
+      worker-multiplier: *worker-multiplier
+      #config-flags: default_ephemeral_format=ext4
+      #enable-live-migration: True
+      #enable-resize: True
+      #migration-auth-type: ssh
+      use-internal-endpoints: True
+      #libvirt-image-backend: qcow2
+      #restrict-ceph-pools: False
+      virt-type: lxd
+    to:
+    - '1'
+    - '2'
+    - '3'
+  openstack-dashboard:
+    annotations:
+      gui-x: '500'
+      gui-y: '-250'
+    charm: *openstack-dashboard-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      openstack-origin: *openstack-origin
+      webroot: "/"
+      secret: "encryptcookieswithme"
+      neutron-network-l3ha: True
+      neutron-network-lb: True
+      neutron-network-firewall: False
+      cinder-backup: False
+      password-retrieve: True
+      endpoint-type: publicURL
+      haproxy-server-timeout: *haproxy-server-timeout
+      haproxy-client-timeout: *haproxy-client-timeout
+      haproxy-queue-timeout: *haproxy-queue-timeout
+      haproxy-connect-timeout: *haproxy-connect-timeout
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+### Database and MQ Configuration ###
+  mysql:
+    annotations:
+      gui-x: '0'
+      gui-y: '250'
+    charm: *mysql-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      max-connections: *mysql-connections
+      innodb-buffer-pool-size: *mysql-buffer
+      wait-timeout: *mysql-wait
+      enable-binlogs: True
+      performance-schema: True
+      min-cluster-size: 3
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+  rabbitmq-server:
+    annotations:
+      gui-x: '500'
+      gui-y: '250'
+    charm: *rabbitmq-server-charm
+    num_units: 3
+    options:
+      prefer-ipv6: *prefer-ipv6
+      min-cluster-size: 3
+    to:
+    - "lxd:0"
+    - "lxd:1"
+    - "lxd:2"
+### Supporting Application Configuration ###
+  ntp:
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+    charm: *ntp-charm
+    num_units: 0
+    options:
+      source: *ntp-source
+  livepatch:
+    series: bionic
+    charm: *canonical-livepatch-charm
+    livepatch_key: *livepatch-key
+  landscape-client:
+    series: bionic
+    charm: *landscape-client-charm
+    options:
+      account-name: *landscape-account
+      include-manager-plugins: ScriptExecution
+      origin: 'deb http://ppa.launchpad.net/landscape/18.03/ubuntu bionic main'
+      ping-url: 'http://landscape.canonical.com/ping'
+      script-users: ALL
+      tags: *landscape-tags
+      url: 'https://landscape.canonical.com/message-system'

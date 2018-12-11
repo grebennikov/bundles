@@ -63,7 +63,8 @@ applications:
     to:
     - lxd:ceph-osd
   kubernetes-worker:
-    charm: cs:~containers/kubernetes-worker
+          # charm: cs:~containers/kubernetes-worker
+    charm: cs:~containers/kubernetes-worker-395
     constraints: cores=2 mem=2048 root-disk=15G
     num_units: 3
     expose: true
