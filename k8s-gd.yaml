@@ -1,0 +1,363 @@
+series: bionic
+variables:
+  oam-space:           &oam-space           oam-space
+machines:
+  '0':
+    constraints: tags=controller
+  '1':
+    constraints: tags=controller
+  '2':
+    constraints: tags=controller
+  '3':
+    constraints: tags=compute
+  '4':
+    constraints: tags=compute
+  '5':
+    constraints: tags=compute
+  "6":
+    constraints: tags=graylog
+  "7":
+    constraints: tags=prometheus
+  "8":
+    constraints: tags=grafana
+  "9":
+    constraints: tags=elastic1
+  "10":
+    constraints: tags=elastic2
+  '11':
+    constraints: tags=compute
+
+applications:
+  keepalived:
+    charm: cs:~containers/keepalived
+    options:
+      virtual_ip: 172.29.146.12/24
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel-worker:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  easyrsa:
+    charm: cs:~containers/easyrsa
+    constraints: root-disk=8G
+    num_units: 1
+    annotations:
+      gui-x: '450'
+      gui-y: '550'
+    to:
+    - lxd:0
+    bindings:
+      "": *oam-space
+  ceph-osd:
+    charm: cs:ceph-osd
+    num_units: 4
+    options:
+      osd-devices: /dev/disk/by-dname/bcache1 /dev/disk/by-dname/bcache2 /dev/disk/by-dname/bcache3 /dev/disk/by-dname/bcache4
+    bindings:
+      "": *oam-space
+      #      cluster: ceph-cluster
+    annotations:
+      gui-x: '300'
+      gui-y: '300'
+    to:
+    - 3
+    - 4
+    - 5
+    - 11
+  ceph-radosgw:
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    charm: cs:ceph-radosgw
+    num_units: 1
+    bindings:
+      "": *oam-space
+    to:
+    - lxd:1
+  kubernetes-worker:
+    charm: cs:~containers/kubernetes-worker
+    num_units: 4
+    expose: true
+    annotations:
+      gui-x: '100'
+      gui-y: '850'
+    bindings:
+      "": *oam-space
+    options:
+      kubelet-extra-config: "{failSwapOn: false}"
+      channel: 1.15/stable
+      allow-privileged: "true"
+    to:
+    - 3
+    - 4
+    - 5
+    - 11
+  kubernetes-master:
+    charm: cs:~containers/kubernetes-master
+    num_units: 3
+    annotations:
+      gui-x: '800'
+      gui-y: '850'
+    options:
+      allow-privileged: 'true'
+      channel: 1.15/stable
+    bindings:
+      "": *oam-space
+    to:
+    - lxd:0
+    - lxd:1
+    - lxd:2
+  ceph-mon:
+    charm: 'cs:ceph-mon'
+    num_units: 3
+    annotations:
+      gui-x: '600'
+      gui-y: '300'
+    options:
+      expected-osd-count: 16
+      source: distro
+      customize-failure-domain: False
+    bindings:
+      "": *oam-space
+    to:
+     - lxd:0
+     - lxd:1
+     - lxd:2
+  etcd:
+    charm: cs:~containers/etcd
+    num_units: 3
+    constraints: root-disk=8G
+    annotations:
+      gui-x: '800'
+      gui-y: '550'
+    bindings:
+      "": *oam-space
+    options:
+      channel: 3.2/stable
+    to:
+    - lxd:0
+    - lxd:1
+    - lxd:2
+  kubeapi-load-balancer:
+    charm: cs:~containers/kubeapi-load-balancer
+    num_units: 3
+    expose: true
+    options:
+      extra_sans: 172.29.146.12
+    annotations:
+      gui-x: '450'
+      gui-y: '250'
+    bindings:
+      "": *oam-space
+    to:
+    - lxd:0
+    - lxd:1
+    - lxd:2
+  docker:
+    charm: cs:~containers/docker
+    resources: {}
+    annotations:
+      gui-x: '450'
+      gui-y: '250'
+  elasticsearch:
+    charm: cs:elasticsearch
+    num_units: 1
+    options:
+      firewall_enabled: False
+      gpg-key: |
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+        Version: SKS 1.1.6
+        Comment: Hostname: keyserver.ubuntu.com
+
+        mQENBFI3HsoBCADXDtbNJnxbPqB1vDNtCsqhe49vFYsZN9IOZsZXgp7aHjh6CJBDA+bGFOwy
+        hbd7at35jQjWAw1O3cfYsKAmFy+Ar3LHCMkV3oZspJACTIgCrwnkic/9CUliQe324qvObU2Q
+        RtP4Fl0zWcfb/S8UYzWXWIFuJqMvE9MaRY1bwUBvzoqavLGZj3SF1SPO+TB5QrHkrQHBsmX+
+        Jda6d4Ylt8/t6CvMwgQNlrlzIO9WT+YN6zS+sqHd1YK/aY5qhoLNhp9G/HxhcSVCkLq8SStj
+        1ZZ1S9juBPoXV1ZWNbxFNGwOh/NYGldD2kmBf3YgCqeLzHahsAEpvAm8TBa7Q9W21C8vABEB
+        AAG0RUVsYXN0aWNzZWFyY2ggKEVsYXN0aWNzZWFyY2ggU2lnbmluZyBLZXkpIDxkZXZfb3Bz
+        QGVsYXN0aWNzZWFyY2gub3JnPokBOAQTAQIAIgUCUjceygIbAwYLCQgHAwIGFQgCCQoLBBYC
+        AwECHgECF4AACgkQ0n1mbNiOQrRzjAgAlTUQ1mgo3nK6BGXbj4XAJvuZDG0HILiUt+pPnz75
+        nsf0NWhqR4yGFlmpuctgCmTD+HzYtV9fp9qW/bwVuJCNtKXk3sdzYABY+Yl0Cez/7C2GuGCO
+        lbn0luCNT9BxJnh4mC9h/cKI3y5jvZ7wavwe41teqG14V+EoFSn3NPKmTxcDTFrV7SmVPxCB
+        cQze00cJhprKxkuZMPPVqpBS+JfDQtzUQD/LSFfhHj9eD+Xe8d7sw+XvxB2aN4gnTlRzjL1n
+        TRp0h2/IOGkqYfIG9rWmSLNlxhB2t+c0RsjdGM4/eRlPWylFbVMc5pmDpItrkWSnzBfkmXL3
+        vO2X3WvwmSFiQbkBDQRSNx7KAQgA5JUlzcMW5/cuyZR8alSacKqhSbvoSqqbzHKcUQZmlzNM
+        KGTABFG1yRx9r+wa/fvqP6OTRzRDvVS/cycws8YX7Ddum7x8uI95b9ye1/Xy5noPEm8cD+hp
+        lnpU+PBQZJ5XJ2I+1l9Nixx47wPGXeClLqcdn0ayd+v+Rwf3/XUJrvccG2YZUiQ4jWZkoxsA
+        07xx7Bj+Lt8/FKG7sHRFvePFU0ZS6JFx9GJqjSBbHRRkam+4emW3uWgVfZxuwcUCn1ayNgRt
+        KiFv9jQrg2TIWEvzYx9tywTCxc+FFMWAlbCzi+m4WD+QUWWfDQ009U/WM0ks0KwwEwSk/UDu
+        ToxGnKU2dQARAQABiQEfBBgBAgAJBQJSNx7KAhsMAAoJENJ9ZmzYjkK0c3MIAIE9hAR20mqJ
+        WLcsxLtrRs6uNF1VrpB+4n/55QU7oxA1iVBO6IFu4qgsF12JTavnJ5MLaETlggXY+zDef9sy
+        TPXoQctpzcaNVDmedwo1SiL03uMoblOvWpMR/Y0j6rm7IgrMWUDXDPvoPGjMl2q1iTeyHkMZ
+        EyUJ8SKsaHh4jV9wp9KmC8C+9CwMukL7vM5w8cgvJoAwsp3Fn59AxWthN3XJYcnMfStkIuWg
+        R7U2r+a210W6vnUxU4oN0PmMcursYPyeV0NX/KQeUeNMwGTFB6QHS/anRaGQewijkrYYoTNt
+        fllxIu9XYmiBERQ/qPDlGRlOgVTd9xUfHFkzB52c70E=
+        =92oX
+        -----END PGP PUBLIC KEY BLOCK-----
+    bindings:
+      "": *oam-space
+    to:
+    - 9
+  filebeat:
+    charm: cs:filebeat
+    options:
+      kube_logs: True
+      logpath: "/var/log/*.log /var/log/*/*.log /var/log/syslog"
+      install_keys: |-
+        - |
+          -----BEGIN PGP PUBLIC KEY BLOCK-----
+          Version: SKS 1.1.6
+          Comment: Hostname: keyserver.ubuntu.com
+
+          mQENBFI3HsoBCADXDtbNJnxbPqB1vDNtCsqhe49vFYsZN9IOZsZXgp7aHjh6CJBDA+bGFOwy
+          hbd7at35jQjWAw1O3cfYsKAmFy+Ar3LHCMkV3oZspJACTIgCrwnkic/9CUliQe324qvObU2Q
+          RtP4Fl0zWcfb/S8UYzWXWIFuJqMvE9MaRY1bwUBvzoqavLGZj3SF1SPO+TB5QrHkrQHBsmX+
+          Jda6d4Ylt8/t6CvMwgQNlrlzIO9WT+YN6zS+sqHd1YK/aY5qhoLNhp9G/HxhcSVCkLq8SStj
+          1ZZ1S9juBPoXV1ZWNbxFNGwOh/NYGldD2kmBf3YgCqeLzHahsAEpvAm8TBa7Q9W21C8vABEB
+          AAG0RUVsYXN0aWNzZWFyY2ggKEVsYXN0aWNzZWFyY2ggU2lnbmluZyBLZXkpIDxkZXZfb3Bz
+          QGVsYXN0aWNzZWFyY2gub3JnPokBOAQTAQIAIgUCUjceygIbAwYLCQgHAwIGFQgCCQoLBBYC
+          AwECHgECF4AACgkQ0n1mbNiOQrRzjAgAlTUQ1mgo3nK6BGXbj4XAJvuZDG0HILiUt+pPnz75
+          nsf0NWhqR4yGFlmpuctgCmTD+HzYtV9fp9qW/bwVuJCNtKXk3sdzYABY+Yl0Cez/7C2GuGCO
+          lbn0luCNT9BxJnh4mC9h/cKI3y5jvZ7wavwe41teqG14V+EoFSn3NPKmTxcDTFrV7SmVPxCB
+          cQze00cJhprKxkuZMPPVqpBS+JfDQtzUQD/LSFfhHj9eD+Xe8d7sw+XvxB2aN4gnTlRzjL1n
+          TRp0h2/IOGkqYfIG9rWmSLNlxhB2t+c0RsjdGM4/eRlPWylFbVMc5pmDpItrkWSnzBfkmXL3
+          vO2X3WvwmSFiQbkBDQRSNx7KAQgA5JUlzcMW5/cuyZR8alSacKqhSbvoSqqbzHKcUQZmlzNM
+          KGTABFG1yRx9r+wa/fvqP6OTRzRDvVS/cycws8YX7Ddum7x8uI95b9ye1/Xy5noPEm8cD+hp
+          lnpU+PBQZJ5XJ2I+1l9Nixx47wPGXeClLqcdn0ayd+v+Rwf3/XUJrvccG2YZUiQ4jWZkoxsA
+          07xx7Bj+Lt8/FKG7sHRFvePFU0ZS6JFx9GJqjSBbHRRkam+4emW3uWgVfZxuwcUCn1ayNgRt
+          KiFv9jQrg2TIWEvzYx9tywTCxc+FFMWAlbCzi+m4WD+QUWWfDQ009U/WM0ks0KwwEwSk/UDu
+          ToxGnKU2dQARAQABiQEfBBgBAgAJBQJSNx7KAhsMAAoJENJ9ZmzYjkK0c3MIAIE9hAR20mqJ
+          WLcsxLtrRs6uNF1VrpB+4n/55QU7oxA1iVBO6IFu4qgsF12JTavnJ5MLaETlggXY+zDef9sy
+          TPXoQctpzcaNVDmedwo1SiL03uMoblOvWpMR/Y0j6rm7IgrMWUDXDPvoPGjMl2q1iTeyHkMZ
+          EyUJ8SKsaHh4jV9wp9KmC8C+9CwMukL7vM5w8cgvJoAwsp3Fn59AxWthN3XJYcnMfStkIuWg
+          R7U2r+a210W6vnUxU4oN0PmMcursYPyeV0NX/KQeUeNMwGTFB6QHS/anRaGQewijkrYYoTNt
+          fllxIu9XYmiBERQ/qPDlGRlOgVTd9xUfHFkzB52c70E=
+          =92oX
+          -----END PGP PUBLIC KEY BLOCK-----
+      install_sources: |
+          - 'deb https://artifacts.elastic.co/packages/5.x/apt stable main'
+  apache2:
+    charm: cs:apache2
+    expose: true
+    options:
+      enable_modules: "headers proxy_html proxy_http"
+    num_units: 1
+    bindings:
+      "": *oam-space
+    to:
+    - 10
+  graylog:
+    charm: cs:graylog
+    constraints: mem=4G
+#    options:
+#      snap_proxy: http://squid.internal:3128/
+    num_units: 1
+    bindings:
+      "": *oam-space
+    options:
+      channel: 3/stable
+    to:
+    - 6
+  mongodb:
+    charm: cs:mongodb
+    options:
+      extra_daemon_options: "--bind_ip_all"
+    num_units: 1
+    bindings:
+      "": *oam-space
+    to:
+    - lxd:6
+  grafana:
+    charm: cs:~prometheus-charmers/grafana
+    expose: true
+    options:
+      port: "3000"  # XXX: bug 1752960
+      install_method: snap
+    num_units: 1
+    bindings:
+      "": *oam-space
+    to:
+    - 8
+  prometheus:
+    charm: cs:prometheus2
+#    options:
+#      snap_proxy: http://squid.internal:3128/
+    num_units: 1
+    bindings:
+      "": *oam-space
+    to:
+    - 7
+  telegraf:
+    charm: cs:telegraf
+
+relations:
+- - 'ceph-mon:osd'
+  - 'ceph-osd:mon'
+- - 'kubernetes-master:kube-api-endpoint'
+  - 'kubeapi-load-balancer:apiserver'
+- - 'kubernetes-master:loadbalancer'
+  - 'kubeapi-load-balancer:loadbalancer'
+- - 'kubernetes-master:kube-control'
+  - 'kubernetes-worker:kube-control'
+- - 'kubernetes-master:certificates'
+  - 'easyrsa:client'
+- - 'etcd:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-master:etcd'
+  - 'etcd:db'
+- - 'kubernetes-worker:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-worker:kube-api-endpoint'
+  - 'keepalived:website'
+- - 'kubernetes-master:loadbalancer'
+  - 'keepalived:loadbalancer'
+- - 'kubeapi-load-balancer:website'
+  - 'keepalived:lb-sink'
+- - 'kubeapi-load-balancer:juju-info'
+  - 'keepalived:juju-info'
+- - 'kubeapi-load-balancer:certificates'
+  - 'easyrsa:client'
+- - 'flannel:etcd'
+  - 'etcd:db'
+- - 'flannel-worker:etcd'
+  - 'etcd:db'
+- - 'flannel:cni'
+  - 'kubernetes-master:cni'
+- - 'flannel-worker:cni'
+  - 'kubernetes-worker:cni'
+- - 'kubernetes-master:ceph-storage'
+  - 'ceph-mon:admin'
+- - 'ceph-mon:radosgw'
+  - 'ceph-radosgw:mon'
+- - docker:docker
+  - kubernetes-worker:container-runtime
+- - docker:docker
+  - kubernetes-master:container-runtime
+- - apache2:reverseproxy
+  - graylog:website
+- - graylog:elasticsearch
+  - elasticsearch:client
+- - graylog:mongodb
+  - mongodb:database
+- - filebeat:beats-host
+  - kubernetes-master:juju-info
+- - filebeat:beats-host
+  - kubernetes-worker:juju-info
+- - filebeat:logstash
+  - graylog:beats
+- - prometheus:grafana-source
+  - grafana:grafana-source
+- - telegraf:prometheus-client
+  - prometheus:target
+- - kubernetes-master:juju-info
+  - telegraf:juju-info
+- - kubernetes-worker:juju-info
+  - telegraf:juju-info

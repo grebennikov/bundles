@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+ name: ambassador-ext1
+ namespace: kubeflow
+spec:
+ tls:
+   - hosts:
+     - 172.29.146.175.xip.io
+     secretName: 'ambassador-tls'
+ rules:
+   - host: 172.29.146.175.xip.io
+     http:
+       paths:
+         - path: /
+           backend:
+             serviceName: ambassador
+             servicePort: 80

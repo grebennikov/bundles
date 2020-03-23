@@ -1,0 +1,191 @@
+series: bionic
+machines:
+  '0':
+    constraints: tags=master
+  '1':
+    constraints: tags=master
+  '2':
+    constraints: tags=worker
+  '3':
+    constraints: tags=worker
+  '4':
+    constraints: tags=worker
+applications:
+  keepalived:
+    charm: cs:~containers/keepalived
+    options:
+      virtual_ip: 192.168.122.100/24
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  flannel-worker:
+    charm: cs:~containers/flannel
+    annotations:
+      gui-x: '450'
+      gui-y: '750'
+  easyrsa:
+    charm: cs:~containers/easyrsa
+    num_units: 1
+    annotations:
+      gui-x: '450'
+      gui-y: '550'
+    to:
+    - lxd:0
+    bindings:
+      "": default
+  ceph-osd:
+    charm: cs:ceph-osd
+    num_units: 3
+    options:
+      source: cloud:bionic-stein
+      osd-devices: /dev/vdb
+    bindings:
+      "": default
+      #      cluster: ceph-cluster
+    annotations:
+      gui-x: '300'
+      gui-y: '300'
+    to:
+    - 3
+    - 4
+    - 2
+  ceph-radosgw:
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    charm: cs:ceph-radosgw
+    num_units: 1
+    options:
+      source: cloud:bionic-stein
+      pool-prefix: gravit
+    bindings:
+      "": default
+    to:
+    - lxd:2
+  kubernetes-worker:
+          # charm: cs:~containers/kubernetes-worker
+    charm: cs:~containers/kubernetes-worker
+    num_units: 3
+    expose: true
+    annotations:
+      gui-x: '100'
+      gui-y: '850'
+    bindings:
+      "": default
+    options:
+      kubelet-extra-config: "{failSwapOn: false}"
+      channel: 1.16/stable
+    to:
+    - 3
+    - 4
+    - 2
+  kubernetes-master:
+    charm: cs:~containers/kubernetes-master
+    num_units: 2
+    annotations:
+      gui-x: '800'
+      gui-y: '850'
+    options:
+      allow-privileged: 'true'
+      channel: 1.16/stable
+    bindings:
+      "": default
+    to:
+    - lxd:0
+    - lxd:1
+  ceph-mon:
+    charm: 'cs:ceph-mon'
+    num_units: 3
+    options:
+      source: cloud:bionic-stein
+    annotations:
+      gui-x: '600'
+      gui-y: '300'
+    bindings:
+      "": default
+    to:
+     - lxd:0
+     - lxd:1
+     - lxd:2
+  etcd:
+    charm: cs:~containers/etcd
+    num_units: 3
+    annotations:
+      gui-x: '800'
+      gui-y: '550'
+    bindings:
+      "": default
+    options:
+      channel: 3.2/stable
+    to:
+    - lxd:0
+    - lxd:1
+    - lxd:3
+  kubeapi-load-balancer:
+    charm: cs:~containers/kubeapi-load-balancer
+    num_units: 2
+    expose: true
+    options:
+      extra_sans: 192.168.122.100
+    annotations:
+      gui-x: '450'
+      gui-y: '250'
+    bindings:
+      "": default
+    to:
+    - lxd:0
+    - lxd:1
+  docker:
+    charm: cs:~containers/docker
+    resources: {}
+    annotations:
+      gui-x: '450'
+      gui-y: '250'
+relations:
+- - 'ceph-mon:osd'
+  - 'ceph-osd:mon'
+- - 'kubernetes-master:kube-api-endpoint'
+  - 'kubeapi-load-balancer:apiserver'
+- - 'kubernetes-master:loadbalancer'
+  - 'kubeapi-load-balancer:loadbalancer'
+- - 'kubernetes-master:kube-control'
+  - 'kubernetes-worker:kube-control'
+- - 'kubernetes-master:certificates'
+  - 'easyrsa:client'
+- - 'etcd:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-master:etcd'
+  - 'etcd:db'
+- - 'kubernetes-worker:certificates'
+  - 'easyrsa:client'
+- - 'kubernetes-worker:kube-api-endpoint'
+  - 'keepalived:website'
+- - 'kubernetes-master:loadbalancer'
+  - 'keepalived:loadbalancer'
+- - 'kubeapi-load-balancer:website'
+  - 'keepalived:lb-sink'
+- - 'kubeapi-load-balancer:juju-info'
+  - 'keepalived:juju-info'
+- - 'kubeapi-load-balancer:certificates'
+  - 'easyrsa:client'
+- - 'flannel:etcd'
+  - 'etcd:db'
+- - 'flannel-worker:etcd'
+  - 'etcd:db'
+- - 'flannel:cni'
+  - 'kubernetes-master:cni'
+- - 'flannel-worker:cni'
+  - 'kubernetes-worker:cni'
+- - 'kubernetes-master:ceph-storage'
+  - 'ceph-mon:admin'
+- - 'ceph-mon:radosgw'
+  - 'ceph-radosgw:mon'
+- - docker:docker
+  - kubernetes-worker:container-runtime
+- - docker:docker
+  - kubernetes-master:container-runtime

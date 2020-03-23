@@ -1,0 +1,401 @@
+---
+applications:
+  katib-manager:
+    annotations:
+      gui-x: "-150"
+      gui-y: "777"
+    source: "./charms/katib-manager"
+    charm: "cs:~kubeflow-charmers/katib-manager-34"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  modeldb-backend:
+    annotations:
+      gui-x: "600"
+      gui-y: "-518"
+    source: "./charms/modeldb-backend"
+    charm: "cs:~kubeflow-charmers/modeldb-backend-33"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-api:
+    annotations:
+      gui-x: "300"
+      gui-y: "518"
+    source: "./charms/pipelines-api"
+    charm: "cs:~kubeflow-charmers/pipelines-api-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  minio:
+    annotations:
+      gui-x: "600"
+      gui-y: "518"
+    source: "./charms/minio"
+    charm: "cs:~kubeflow-charmers/minio-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  argo-ui:
+    annotations:
+      gui-x: "150"
+      gui-y: "-259"
+    source: "./charms/argo-ui"
+    charm: "cs:~kubeflow-charmers/argo-ui-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  ambassador-auth:
+    annotations:
+      gui-x: "450"
+      gui-y: "-259"
+    source: "./charms/ambassador-auth"
+    charm: "cs:~kubeflow-charmers/ambassador-auth-40"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  metacontroller:
+    annotations:
+      gui-x: "-750"
+      gui-y: "-259"
+    source: "./charms/metacontroller"
+    charm: "cs:~kubeflow-charmers/metacontroller-31"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  katib-ui:
+    annotations:
+      gui-x: "-150"
+      gui-y: "259"
+    source: "./charms/katib-ui"
+    charm: "cs:~kubeflow-charmers/katib-ui-34"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-viewer:
+    annotations:
+      gui-x: "300"
+      gui-y: "0"
+    source: "./charms/pipelines-viewer"
+    charm: "cs:~kubeflow-charmers/pipelines-viewer-43"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  modeldb-ui:
+    annotations:
+      gui-x: "450"
+      gui-y: "-777"
+    source: "./charms/modeldb-ui"
+    charm: "cs:~kubeflow-charmers/modeldb-ui-33"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  seldon-cluster-manager:
+    annotations:
+      gui-x: "900"
+      gui-y: "518"
+    source: "./charms/seldon-cluster-manager"
+    charm: "cs:~kubeflow-charmers/seldon-cluster-manager-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-db:
+    annotations: ~
+    source: ~
+    charm: "cs:~charmed-osm/mariadb-k8s"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-dashboard:
+    annotations:
+      gui-x: "-300"
+      gui-y: "518"
+    source: "./charms/pipelines-dashboard"
+    charm: "cs:~kubeflow-charmers/pipelines-dashboard-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  ambassador:
+    annotations:
+      gui-x: "0"
+      gui-y: "0"
+    source: "./charms/ambassador"
+    charm: "cs:~kubeflow-charmers/ambassador-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pytorch-operator:
+    annotations:
+      gui-x: "0"
+      gui-y: "-518"
+    source: "./charms/pytorch-operator"
+    charm: "cs:~kubeflow-charmers/pytorch-operator-43"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  modeldb-store:
+    annotations:
+      gui-x: "150"
+      gui-y: "-777"
+    source: "./charms/modeldb-store"
+    charm: "cs:~kubeflow-charmers/modeldb-store-33"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  katib-controller:
+    annotations:
+      gui-x: "450"
+      gui-y: "259"
+    source: "./charms/katib-controller"
+    charm: "cs:~kubeflow-charmers/katib-controller-35"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  modeldb-db:
+    annotations: ~
+    source: ~
+    charm: "cs:~charmed-osm/mariadb-k8s"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  jupyter-controller:
+    annotations:
+      gui-x: "-600"
+      gui-y: "0"
+    source: "./charms/jupyter-controller"
+    charm: "cs:~kubeflow-charmers/jupyter-controller-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  tf-job-operator:
+    annotations:
+      gui-x: "-300"
+      gui-y: "-518"
+    source: "./charms/tf-job-operator"
+    charm: "cs:~kubeflow-charmers/tf-job-operator-41"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  argo-controller:
+    annotations:
+      gui-x: "300"
+      gui-y: "-518"
+    source: "./charms/argo-controller"
+    charm: "cs:~kubeflow-charmers/argo-controller-41"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-scheduledworkflow:
+    annotations:
+      gui-x: "0"
+      gui-y: "518"
+    source: "./charms/pipelines-scheduledworkflow"
+    charm: "cs:~kubeflow-charmers/pipelines-scheduledworkflow-43"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  redis:
+    annotations:
+      gui-x: "750"
+      gui-y: "259"
+    source: "./charms/redis"
+    charm: "cs:~kubeflow-charmers/redis-33"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  katib-db:
+    annotations: ~
+    source: ~
+    charm: "cs:~charmed-osm/mariadb-k8s"
+    config: {}
+    constraints: ~
+    expose: false
+    options:
+      database: katib
+    resources: {}
+    scale: 1
+  pipelines-ui:
+    annotations:
+      gui-x: "150"
+      gui-y: "259"
+    source: "./charms/pipelines-ui"
+    charm: "cs:~kubeflow-charmers/pipelines-ui-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  tensorboard:
+    annotations:
+      gui-x: "-450"
+      gui-y: "-259"
+    source: "./charms/tensorboard"
+    charm: "cs:~kubeflow-charmers/tensorboard-41"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  seldon-api-frontend:
+    annotations:
+      gui-x: "600"
+      gui-y: "0"
+    source: "./charms/seldon-api-frontend"
+    charm: "cs:~kubeflow-charmers/seldon-api-frontend-41"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  jupyter-web:
+    annotations:
+      gui-x: "-300"
+      gui-y: "0"
+    source: "./charms/jupyter-web"
+    charm: "cs:~kubeflow-charmers/jupyter-web-44"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  tf-job-dashboard:
+    annotations:
+      gui-x: "-150"
+      gui-y: "-259"
+    source: "./charms/tf-job-dashboard"
+    charm: "cs:~kubeflow-charmers/tf-job-dashboard-43"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+  pipelines-persistence:
+    annotations:
+      gui-x: "150"
+      gui-y: "777"
+    source: "./charms/pipelines-persistence"
+    charm: "cs:~kubeflow-charmers/pipelines-persistence-42"
+    config: {}
+    constraints: ~
+    expose: false
+    options: {}
+    resources: {}
+    scale: 1
+bundle: kubernetes
+description: ~
+relations:
+  - - ambassador
+    - ambassador-auth
+  - - ambassador
+    - argo-ui
+  - - ambassador
+    - jupyter-web
+  - - ambassador
+    - katib-ui
+  - - ambassador
+    - pipelines-ui
+  - - ambassador
+    - pipelines-viewer
+  - - ambassador
+    - tensorboard
+  - - ambassador
+    - tf-job-dashboard
+  - - argo-controller
+    - minio
+  - - katib-manager
+    - katib-db
+  - - modeldb-backend
+    - modeldb-db
+  - - modeldb-backend
+    - modeldb-store
+  - - modeldb-backend
+    - modeldb-ui
+  - - pipelines-api
+    - pipelines-db
+  - - pipelines-api
+    - minio
+  - - pipelines-api
+    - pipelines-persistence
+  - - "pipelines-api:pipelines-api"
+    - "pipelines-ui:pipelines-api"
+  - - "pipelines-ui:minio"
+    - "minio:minio"
+  - - redis
+    - seldon-api-frontend
+  - - redis
+    - seldon-cluster-manager
+series: ~
